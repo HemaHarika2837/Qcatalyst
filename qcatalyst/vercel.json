@@ -5,7 +5,7 @@
 "src": "backend/main.py",
 "use": "@vercel/python",
 "config": {
-"requirements": "backend/requirements-vercel.txt"
+"maxLambdaSize": "50mb"
 }
 },
 {
