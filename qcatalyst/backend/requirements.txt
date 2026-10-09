@@ -1,37 +1,6 @@
-# QCatalyst Backend – Python dependencies
-# Install with: pip install -r backend/requirements.txt
-
-# Web framework
 fastapi==0.111.0
-uvicorn[standard]==0.29.0
-
-# Data & ML
+uvicorn==0.29.0
 numpy==1.26.4
 pandas==2.2.2
 scikit-learn==1.4.2
-
-# Data validation
 pydantic==2.7.1
-
-# Testing
-pytest==8.2.0
-httpx==0.27.0          # for TestClient
-
-# --- Quantum chemistry (optional but recommended) ---
-# These take longer to install; comment out if not needed for the surrogate-only demo
-qiskit==1.1.0
-qiskit-aer==0.14.2
-qiskit-algorithms==0.3.0
-qiskit-nature==0.7.2
-
-# PySCF (quantum chemistry backend for Qiskit Nature)
-pyscf==2.5.0
-
-# RDKit (optional – molecule drawing helpers)
-# rdkit==2024.3.1       # uncomment if you want mol structure rendering
-
-# AI advisor (optional)
-anthropic==0.26.0       # only used if ANTHROPIC_API_KEY env var is set
-
-# Export helpers
-reportlab==4.2.0        # PDF generation (future extension)
