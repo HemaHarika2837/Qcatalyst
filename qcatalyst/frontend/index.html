@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QCatalyst – Quantum Catalyst Design System</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="https://3dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════ TOP BAR ═══════════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="logo">⚛ QCatalyst</span>
+    <span class="tagline">Quantum Simulation-based Catalyst Design</span>
+    <span class="badge-approx">⚠ Prototype – Approximated Values</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-ghost" id="btnHowItWorks">How It Works</button>
+    <button class="btn-ghost" id="btnTheme" title="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<!-- ═══════════════════ MAIN LAYOUT ═══════════════════ -->
+<div class="layout">
+
+  <!-- ── LEFT SIDEBAR ── -->
+  <aside class="sidebar">
+    <section class="sidebar-section">
+      <h3>Target Reaction</h3>
+      <select id="selectReaction" class="input-full"></select>
+      <div id="reactionInfo" class="reaction-info card-muted"></div>
+    </section>
+
+    <section class="sidebar-section">
+      <h3>Simulation Mode</h3>
+      <div class="mode-fixed-box">
+        <span class="mode-fixed-icon">🔬</span>
+        <div>
+          <strong>Quantum VQE</strong>
+          <p class="hint">Variational Quantum Eigensolver on Qiskit Aer simulator. Solves the quantum mechanical ground-state energy for each catalyst.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sidebar-section">
+      <h3>Scoring Weights</h3>
+      <div id="weightSliders"></div>
+    </section>
+
+    <section class="sidebar-section">
+      <button class="btn-primary btn-full" id="btnRun">▶ Run Screening</button>
+      <button class="btn-outline btn-full" id="btnDownloadCSV" disabled>⬇ Download CSV</button>
+    </section>
+
+    <section class="sidebar-section">
+      <h3>Add Custom Catalyst</h3>
+      <form id="formCustom">
+        <input class="input-full" name="formula" placeholder="Formula (e.g. NiCoFe)" required />
+        <input class="input-full" name="name" placeholder="Name" required />
+        <input class="input-full" name="d_band_center" placeholder="d-band centre (eV)" type="number" step="0.01" required />
+        <input class="input-full" name="cost_per_kg" placeholder="Cost ($/kg)" type="number" step="0.01" required />
+        <input class="input-full" name="electronegativity" placeholder="Electronegativity" type="number" step="0.01" value="2.0" />
+        <input class="input-full" name="atomic_radius" placeholder="Atomic radius (Å)" type="number" step="0.01" value="1.4" />
+        <button type="submit" class="btn-outline btn-full" style="margin-top:6px">+ Add Material</button>
+      </form>
+    </section>
+  </aside>
+
+  <!-- ── CENTER (full width now, no AI panel) ── -->
+  <main class="center">
+
+    <!-- Disclaimer banner -->
+    <div id="bannerDisclaimer" class="banner-disclaimer hidden">
+      ⚠ <span id="disclaimerText"></span>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="progressWrap" class="progress-wrap hidden">
+      <div class="progress-label"><span id="progressLabel">Running simulation…</span></div>
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar" style="width:0%"></div></div>
+    </div>
+
+    <!-- Leaderboard -->
+    <section class="card">
+      <div class="card-header">
+        <h2>Catalyst Leaderboard</h2>
+        <span id="leaderboardSubtitle" class="subtitle">Run a screening to see results</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Formula</th>
+              <th>Name</th>
+              <th>Ads. Energy (eV)</th>
+              <th>Barrier (eV)</th>
+              <th>Activity</th>
+              <th>Stability</th>
+              <th>Cost</th>
+              <th>Score</th>
+              <th>Mode</th>
+            </tr>
+          </thead>
+          <tbody id="tblBody">
+            <tr><td colspan="10" class="empty-msg">No data yet — select a reaction and click Run Screening.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Volcano + Radar side by side, taller -->
+    <div class="chart-row">
+      <section class="card chart-card">
+        <div class="card-header">
+          <h2>Volcano Plot</h2>
+          <span class="subtitle">Hover over a dot to see details</span>
+        </div>
+        <div id="plotVolcano" class="plot-container plot-tall"></div>
+      </section>
+
+      <section class="card chart-card">
+        <div class="card-header">
+          <h2>Top-3 Radar</h2>
+          <span class="subtitle">Multi-criteria comparison</span>
+        </div>
+        <div id="plotRadar" class="plot-container plot-tall"></div>
+      </section>
+    </div>
+
+    <!-- Selected catalyst detail -->
+    <section class="card" id="sectionDetail">
+      <div class="card-header">
+        <h2 id="detailTitle">Catalyst Detail</h2>
+        <span class="subtitle" id="detailSubtitle">Click any row in the leaderboard above</span>
+      </div>
+
+      <div class="detail-row">
+        <div class="detail-col">
+          <h3>Free Energy Profile</h3>
+          <div id="plotEnergy" class="plot-container plot-medium"></div>
+        </div>
+        <div class="detail-col">
+          <h3>3D Cluster Viewer <span class="hint-inline">(drag to rotate)</span></h3>
+          <div id="mol3dContainer" style="width:100%;height:300px;position:relative;background:#0d1117;border-radius:8px;border:1px solid var(--border)"></div>
+          <p class="hint" style="text-align:center;margin-top:6px">Schematic surface model — not a DFT-optimised geometry</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════════ HOW IT WORKS MODAL ═══════════════════ -->
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <button class="modal-close" id="btnCloseModal">✕</button>
+    <h2>How QCatalyst Works</h2>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="step-num">1</div>
+        <div>
+          <strong>Select a Reaction</strong>
+          <p>Pick the reaction you want to optimise — HER, ORR, CO₂RR, OER, or NH₃ synthesis. Each has a key thermodynamic descriptor that determines which catalysts will be best.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">2</div>
+        <div>
+          <strong>Choose a Mode</strong>
+          <p><strong>Fast Surrogate:</strong> A machine-learning model predicts adsorption energies instantly from material properties (d-band centre, electronegativity, atomic radius).</p>
+          <p><strong>Quantum VQE:</strong> Runs a real Variational Quantum Eigensolver circuit on a simulated quantum computer (Qiskit Aer). Slower but demonstrates the quantum workflow.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">3</div>
+        <div>
+          <strong>Adjust Weights & Run</strong>
+          <p>Use the sliders to decide how much you care about activity, stability, selectivity, cost, and abundance. Then click <strong>Run Screening</strong>.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">4</div>
+        <div>
+          <strong>Read the Results</strong>
+          <p><strong>Leaderboard:</strong> All 31 materials ranked by composite score.<br>
+          <strong>Volcano Plot:</strong> Hover over dots — best catalysts sit at the peak. The green star is the theoretical optimum.<br>
+          <strong>Radar Chart:</strong> Top-3 compared across all criteria.<br>
+          <strong>Click any row</strong> to see the energy profile, VQE convergence, 3D viewer, and properties.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">5</div>
+        <div>
+          <strong>Export</strong>
+          <p>Click <strong>Download CSV</strong> to save the full ranked results for further analysis.</p>
+        </div>
+      </div>
+    </div>
+    <div class="disclaimer-box">
+      <strong>⚠ Important:</strong> All results are <em>simplified approximations</em>.
+      The VQE uses a minimal H₂ proxy model, not a real metal surface.
+      Results are <strong>NOT experimentally validated</strong>.
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
