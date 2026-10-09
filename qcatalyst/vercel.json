@@ -1,26 +1,24 @@
-<escape>{
-"version": 2,
-"builds": [
+
 {
-"src": "backend/main.py",
-"use": "@vercel/python",
-"config": {
-"requirements": "backend/requirements.txt"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    {
+      "src": "backend/main.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
+    }
+  ]
 }
-},
-{
-"src": "frontend/**",
-"use": "@vercel/static"
-}
-],
-"routes": [
-{
-"src": "/api/(.*)",
-"dest": "backend/main.py"
-},
-{
-"src": "/(.*)",
-"dest": "frontend/$1"
-}
-]
-}</escape>
